@@ -6,6 +6,8 @@ from models.space_ship import Spaceship
 from models.space_ship_bullet import SpaceShipBullet
 from models.enemy import Enemy
 from models.astronaut import Astronaut
+from models.left_wing_bullet import LeftWingBullet
+from models.right_wing_bullet import RightWingBullet
 from constants import *
 
 pygame.font.init()
@@ -26,15 +28,15 @@ astronaut_image = pygame.transform.scale(astronaut_image, (ASTRONAUT_WIDTH, ASTR
 
 # initializing music and sounds
 pygame.mixer.music.load('assets/background.mp3')
-shoot_sound = pygame.mixer.Sound('assets/shoot.mp3')
 game_over_sound = pygame.mixer.Sound('assets/game_over.mp3')
 
 # define game variables
 allSprites = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
 spaceShipBullets = pygame.sprite.Group()
+leftWingBullets = pygame.sprite.Group()
+rightWingBullets = pygame.sprite.Group()
 astronauts = pygame.sprite.Group()
-amount_of_guns = 1
 
 bg_width = bg.get_width()
 tiles = math.ceil(SCREEN_HEIGHT / bg_width) + 1
@@ -74,6 +76,7 @@ def main():
     elapsedTime = 0
     damage = 0
     score = 0
+    amount_of_guns = 1
     
     # create player
     player = Spaceship(player_image, SCREEN_WIDTH/2-PLAYER_WIDTH/2, SCREEN_HEIGHT - PLAYER_HEIGHT)
@@ -102,7 +105,8 @@ def main():
                 allSprites.add(enemy)
                 enemies.add(enemy)
         
-        if current_time - astronautSpawnTimer >= ASTRONAUT_SPAWN_INTERVAL:
+        if amount_of_guns < 3 and current_time - astronautSpawnTimer >= ASTRONAUT_SPAWN_INTERVAL:
+            print(f'amount_of_guns = {amount_of_guns}')   
             astronautSpawnTimer = current_time
             astronaut = Astronaut(astronaut_image)
             allSprites.add(astronaut)
@@ -125,23 +129,46 @@ def main():
             player.move_down()
         if keys[pygame.K_SPACE]:
             if player.can_shoot():
-                player.shoot()               
-                shoot_sound.play()
-                bullet = SpaceShipBullet(player.rect.centerx, player.rect.top)
-                spaceShipBullets.add(bullet)
-                allSprites.add(bullet)   
+                player.shoot()  
+                match amount_of_guns:
+                    case 1:                               
+                        spaceShipBullet = SpaceShipBullet(player.rect.centerx, player.rect.top)
+                        spaceShipBullets.add(spaceShipBullet)
+                        allSprites.add(spaceShipBullet) 
+                    case 2:
+                        leftWingBullet = LeftWingBullet(player.rect.centerx - 20, player.rect.top - 20)  
+                        leftWingBullets.add(leftWingBullet)
+                        allSprites.add(leftWingBullet) 
+                        rightWingBullet = RightWingBullet(player.rect.centerx + 20, player.rect.top - 20)  
+                        rightWingBullets.add(rightWingBullet)
+                        allSprites.add(rightWingBullet) 
+                    case 3:
+                        spaceShipBullet = SpaceShipBullet(player.rect.centerx, player.rect.top)
+                        spaceShipBullets.add(spaceShipBullet)
+                        allSprites.add(spaceShipBullet) 
+                        leftWingBullet = LeftWingBullet(player.rect.centerx - 20, player.rect.top - 20)  
+                        leftWingBullets.add(leftWingBullet)
+                        allSprites.add(leftWingBullet) 
+                        rightWingBullet = RightWingBullet(player.rect.centerx + 20, player.rect.top - 20)  
+                        rightWingBullets.add(rightWingBullet)
+                        allSprites.add(rightWingBullet) 
 
         # check for collisions
         hitsPlayerWithEnemy = pygame.sprite.spritecollide(player, enemies, False, pygame.sprite.collide_circle)
-        if hitsPlayerWithEnemy:            
-            pygame.mixer.music.stop()
-            game_over_sound.play()
-            lost_text = FONT.render("You lost!", 1, "white")
-            screen.blit(lost_text, (SCREEN_WIDTH/2 - lost_text.get_width()/2, SCREEN_HEIGHT/2 - lost_text.get_height()/2))
-            pygame.display.update()
-            pygame.time.delay(GAME_OVER_DELAY)
-            running = False
-            break
+        if hitsPlayerWithEnemy:     
+            if amount_of_guns > 1:
+                amount_of_guns -= 1
+                for enemy in hitsPlayerWithEnemy:
+                    enemy.kill()
+            else:    
+                pygame.mixer.music.stop()
+                game_over_sound.play()
+                lost_text = FONT.render("You lost!", 1, "white")
+                screen.blit(lost_text, (SCREEN_WIDTH/2 - lost_text.get_width()/2, SCREEN_HEIGHT/2 - lost_text.get_height()/2))
+                pygame.display.update()
+                pygame.time.delay(GAME_OVER_DELAY)
+                running = False
+                break
 
         for playerBullet in spaceShipBullets:
             hitsEnemyWithBullet = pygame.sprite.spritecollide(playerBullet, enemies, True)
@@ -150,13 +177,27 @@ def main():
                     playerBullet.kill()
                     score += 1
 
+        for leftWingBullet in leftWingBullets:
+            hitsEnemyWithBullet = pygame.sprite.spritecollide(leftWingBullet, enemies, True)
+            if hitsEnemyWithBullet:
+                for enemy in hitsEnemyWithBullet:
+                    leftWingBullet.kill()
+                    score += 1
+
+        for rightWingBullet in rightWingBullets:
+            hitsEnemyWithBullet = pygame.sprite.spritecollide(rightWingBullet, enemies, True)
+            if hitsEnemyWithBullet:
+                for enemy in hitsEnemyWithBullet:
+                    rightWingBullet.kill()
+                    score += 1        
+
         hitsPlayerWithAstronaut = pygame.sprite.spritecollide(player, astronauts, True)
         if hitsPlayerWithAstronaut:
-            print('Astronaut!')
+            if amount_of_guns < 3:
+                amount_of_guns += 1
 
         for enemy in enemies:
-            # enemy.update()
-            if enemy.rect.y > SCREEN_HEIGHT:
+            if enemy.rect.top > SCREEN_HEIGHT:
                 damage += 1
                 print(f"Damage = {damage}")
                 enemies.remove(enemy)
@@ -164,7 +205,6 @@ def main():
 
         allSprites.update() # update all sprites
 
-        # draw(player, elapsed_time, stars, scroll)
         draw(allSprites, elapsedTime, damage, score, scroll)
         
         # scroll background

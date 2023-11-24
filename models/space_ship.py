@@ -1,7 +1,7 @@
 import pygame
 from constants import *
 
-
+pygame.mixer.init()
 
 # Определение классов
 class Spaceship(pygame.sprite.Sprite):
@@ -12,7 +12,8 @@ class Spaceship(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(x, y))
         self.radius = 20  # Adjust the radius for appropriate collision size
         self.last_shot = pygame.time.get_ticks()
-        self.shoot_delay = 150 
+        self.shoot_delay = 200 
+        self.shoot_sound = pygame.mixer.Sound('assets/shoot.mp3')
         
     def can_shoot(self):
         current_time = pygame.time.get_ticks()
@@ -20,7 +21,8 @@ class Spaceship(pygame.sprite.Sprite):
 
     def shoot(self):
         if self.can_shoot():
-            self.last_shot = pygame.time.get_ticks()
+            self.last_shot = pygame.time.get_ticks()       
+            self.shoot_sound.play()
         self.mask = pygame.mask.from_surface(self.image)        
 
     def move_left(self):

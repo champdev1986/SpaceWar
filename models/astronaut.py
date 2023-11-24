@@ -1,9 +1,6 @@
 import pygame
 import random
-
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 960
-ASTRONAUT_SPEED = 3
+from constants import *
 
 class Astronaut(pygame.sprite.Sprite):
     def __init__(self, image):
