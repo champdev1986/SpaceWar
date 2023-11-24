@@ -30,6 +30,7 @@ astronaut_image = pygame.transform.scale(astronaut_image, (ASTRONAUT_WIDTH, ASTR
 pygame.mixer.music.load('assets/background.mp3')
 game_over_sound = pygame.mixer.Sound('assets/game_over.mp3')
 extra_gun_sound = pygame.mixer.Sound('assets/extra_gun.mp3')
+collision_sound = pygame.mixer.Sound('assets/collision.mp3')
 
 # define game variables
 allSprites = pygame.sprite.Group()
@@ -39,29 +40,41 @@ leftWingBullets = pygame.sprite.Group()
 rightWingBullets = pygame.sprite.Group()
 astronauts = pygame.sprite.Group()
 
-bg_width = bg.get_width()
-tiles = math.ceil(SCREEN_HEIGHT / bg_width) + 1
+bg_height = bg.get_height()
+tiles = math.ceil(SCREEN_HEIGHT / bg_height) + 1
 
 FONT = pygame.font.SysFont("comicsans", 30)
 
 # def draw(player, elapsed_time, stars, scroll):
-def draw(all_sprites, elapsed_time, score, scroll):
+def draw(all_sprites, elapsed_time, score, scroll, lives):
 
     # draw scrolling background 
     for i in range(0, tiles):
-        screen.blit(bg, (0, 160-i*bg_width + scroll))
+        screen.blit(bg, (0, 160-i*bg_height + scroll))
 
     # draw elapsed time
     timeText = FONT.render(f"Time: {round(elapsed_time)}s", 1, "white")
     screen.blit(timeText, (10, 10))
 
     scoreText = FONT.render(f"Score: {score}", 1, "white")
-    screen.blit(scoreText, (600, 30))
+    screen.blit(scoreText, (660, 10))
+
+    livesText = FONT.render(f"Lives: {lives}", 1, "white")
+    screen.blit(livesText, (670, 60))
 
     # draw sprites
     all_sprites.draw(screen)
 
     pygame.display.flip()
+
+def game_over():
+    pygame.mixer.music.stop()
+    game_over_sound.play()
+    lost_text = FONT.render("You lost!", 1, "white")
+    screen.blit(lost_text, (SCREEN_WIDTH/2 - lost_text.get_width()/2, SCREEN_HEIGHT/2 - lost_text.get_height()/2))
+    pygame.display.update()
+    pygame.time.delay(GAME_OVER_DELAY)
+
 
 def main():
     running = True
@@ -73,23 +86,18 @@ def main():
     startTime = time.time()
     elapsedTime = 0
     score = 0
+    lives = 3
     amount_of_guns = 1
     levelIncreaseTimer = 0
     level = 1
     
     # create player
-    player = Spaceship(player_image, SCREEN_WIDTH/2-PLAYER_WIDTH/2, SCREEN_HEIGHT - PLAYER_HEIGHT)
+    player = Spaceship(player_image, SCREEN_WIDTH/2-PLAYER_WIDTH/2, SCREEN_HEIGHT - PLAYER_HEIGHT/2)
     allSprites.add(player)
     allSprites.update()
 
     # start background music
     pygame.mixer.music.play(-1)
-
-    # create enemies
-    # for _ in range(5):
-    #     enemy = Enemy(enemy_image, random.randint(1, 3))
-    #     allSprites.add(enemy)
-    #     enemies.add(enemy)
 
     while running:
 
@@ -99,7 +107,6 @@ def main():
         if current_time - levelIncreaseTimer >= GAME_LEVEL_INTERVAL:
             levelIncreaseTimer = current_time
             level += 1
-            print(f'level = {level}')
 
         if current_time - enemySpawnTimer >= ENEMY_SPAWN_INTERVAL or len(enemies) < 5:
             enemySpawnTimer = current_time
@@ -109,7 +116,6 @@ def main():
                 enemies.add(enemy)
         
         if current_time - astronautSpawnTimer >= ASTRONAUT_SPAWN_INTERVAL:
-            print(f'amount_of_guns = {amount_of_guns}')   
             astronautSpawnTimer = current_time
             astronaut = Astronaut(astronaut_image)
             allSprites.add(astronaut)
@@ -159,19 +165,16 @@ def main():
         # check for collisions
         hitsPlayerWithEnemy = pygame.sprite.spritecollide(player, enemies, False, pygame.sprite.collide_circle)
         if hitsPlayerWithEnemy:     
+            collision_sound.play()
             if amount_of_guns > 1:
                 amount_of_guns -= 1
                 for enemy in hitsPlayerWithEnemy:
                     enemy.kill()
-            else:    
-                pygame.mixer.music.stop()
-                game_over_sound.play()
-                lost_text = FONT.render("You lost!", 1, "white")
-                screen.blit(lost_text, (SCREEN_WIDTH/2 - lost_text.get_width()/2, SCREEN_HEIGHT/2 - lost_text.get_height()/2))
-                pygame.display.update()
-                pygame.time.delay(GAME_OVER_DELAY)
+            else:   
+                game_over() 
                 running = False
                 break
+                
 
         for playerBullet in spaceShipBullets:
             hitsEnemyWithBullet = pygame.sprite.spritecollide(playerBullet, enemies, True)
@@ -202,15 +205,25 @@ def main():
             if enemy.rect.top > SCREEN_HEIGHT:
                 enemies.remove(enemy)
 
+        # check for astronauts falling down
+        for astronaut in astronauts:
+            astronaut.update()
+            if astronaut.rect.top > SCREEN_HEIGHT:
+                lives -= 1
+            if lives < 0:
+                game_over()
+                running = False
+                break
+
         allSprites.update() # update all sprites
 
-        draw(allSprites, elapsedTime, score, scroll)
+        draw(allSprites, elapsedTime, score, scroll, lives)
         
         # scroll background
         scroll += 5
 
         #reset scroll
-        if scroll > bg_width:
+        if scroll > bg_height:
             scroll = 0
         
         clock.tick(FPS) #define FPS
