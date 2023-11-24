@@ -11,6 +11,7 @@ VIOLET = (172, 44, 252)
 
 # GAME 
 GAME_OVER_DELAY = 3200
+GAME_LEVEL_INTERVAL = 20
 
 # PLAYER
 PLAYER_WIDTH = 60 
@@ -20,7 +21,7 @@ PLAYER_SPEED = 5
 # ENEMY
 ENEMY_WIDTH = 46 
 ENEMY_HEIGHT = 36
-ENEMY_SPAWN_INTERVAL = 2  # Interval for increasing enemy spawns in seconds
+ENEMY_SPAWN_INTERVAL = 2  # Interval for enemy spawns in seconds
 
 # ASTRONAUT
 ASTRONAUT_WIDTH = 40 

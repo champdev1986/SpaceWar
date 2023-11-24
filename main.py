@@ -77,6 +77,8 @@ def main():
     damage = 0
     score = 0
     amount_of_guns = 1
+    levelIncreaseTimer = 0
+    level = 1
     
     # create player
     player = Spaceship(player_image, SCREEN_WIDTH/2-PLAYER_WIDTH/2, SCREEN_HEIGHT - PLAYER_HEIGHT)
@@ -87,20 +89,24 @@ def main():
     pygame.mixer.music.play(-1)
 
     # create enemies
-    for _ in range(5):
-        enemy = Enemy(enemy_image, random.randint(1, 3))
-        allSprites.add(enemy)
-        enemies.add(enemy)
+    # for _ in range(5):
+    #     enemy = Enemy(enemy_image, random.randint(1, 3))
+    #     allSprites.add(enemy)
+    #     enemies.add(enemy)
 
     while running:
 
         elapsedTime = time.time() - startTime # elapsed time to draw
-
         current_time = pygame.time.get_ticks() // 1000  # Get current time in seconds
 
-        if current_time - enemySpawnTimer >= ENEMY_SPAWN_INTERVAL:
+        if current_time - levelIncreaseTimer >= GAME_LEVEL_INTERVAL:
+            levelIncreaseTimer = current_time
+            level += 1
+            print(f'level = {level}')
+
+        if current_time - enemySpawnTimer >= ENEMY_SPAWN_INTERVAL or len(enemies) < 5:
             enemySpawnTimer = current_time
-            for _ in range(3):  # Increase by 3 enemies each time
+            for _ in range(2 * level):
                 enemy = Enemy(enemy_image, random.randint(1, 3))
                 allSprites.add(enemy)
                 enemies.add(enemy)
@@ -201,7 +207,6 @@ def main():
                 damage += 1
                 print(f"Damage = {damage}")
                 enemies.remove(enemy)
-
 
         allSprites.update() # update all sprites
 
