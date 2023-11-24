@@ -29,6 +29,7 @@ astronaut_image = pygame.transform.scale(astronaut_image, (ASTRONAUT_WIDTH, ASTR
 # initializing music and sounds
 pygame.mixer.music.load('assets/background.mp3')
 game_over_sound = pygame.mixer.Sound('assets/game_over.mp3')
+extra_gun_sound = pygame.mixer.Sound('assets/extra_gun.mp3')
 
 # define game variables
 allSprites = pygame.sprite.Group()
@@ -44,7 +45,7 @@ tiles = math.ceil(SCREEN_HEIGHT / bg_width) + 1
 FONT = pygame.font.SysFont("comicsans", 30)
 
 # def draw(player, elapsed_time, stars, scroll):
-def draw(all_sprites, elapsed_time, damage, score, scroll):
+def draw(all_sprites, elapsed_time, score, scroll):
 
     # draw scrolling background 
     for i in range(0, tiles):
@@ -53,9 +54,6 @@ def draw(all_sprites, elapsed_time, damage, score, scroll):
     # draw elapsed time
     timeText = FONT.render(f"Time: {round(elapsed_time)}s", 1, "white")
     screen.blit(timeText, (10, 10))
-
-    damageText = FONT.render(f"Damage: {damage}", 1, "white")
-    screen.blit(damageText, (600, 10))
 
     scoreText = FONT.render(f"Score: {score}", 1, "white")
     screen.blit(scoreText, (600, 30))
@@ -74,7 +72,6 @@ def main():
     clock = pygame.time.Clock()
     startTime = time.time()
     elapsedTime = 0
-    damage = 0
     score = 0
     amount_of_guns = 1
     levelIncreaseTimer = 0
@@ -111,7 +108,7 @@ def main():
                 allSprites.add(enemy)
                 enemies.add(enemy)
         
-        if amount_of_guns < 3 and current_time - astronautSpawnTimer >= ASTRONAUT_SPAWN_INTERVAL:
+        if current_time - astronautSpawnTimer >= ASTRONAUT_SPAWN_INTERVAL:
             print(f'amount_of_guns = {amount_of_guns}')   
             astronautSpawnTimer = current_time
             astronaut = Astronaut(astronaut_image)
@@ -181,36 +178,33 @@ def main():
             if hitsEnemyWithBullet:
                 for enemy in hitsEnemyWithBullet:
                     playerBullet.kill()
-                    score += 1
 
         for leftWingBullet in leftWingBullets:
             hitsEnemyWithBullet = pygame.sprite.spritecollide(leftWingBullet, enemies, True)
             if hitsEnemyWithBullet:
                 for enemy in hitsEnemyWithBullet:
                     leftWingBullet.kill()
-                    score += 1
 
         for rightWingBullet in rightWingBullets:
             hitsEnemyWithBullet = pygame.sprite.spritecollide(rightWingBullet, enemies, True)
             if hitsEnemyWithBullet:
                 for enemy in hitsEnemyWithBullet:
-                    rightWingBullet.kill()
-                    score += 1        
+                    rightWingBullet.kill()     
 
         hitsPlayerWithAstronaut = pygame.sprite.spritecollide(player, astronauts, True)
         if hitsPlayerWithAstronaut:
+            extra_gun_sound.play()
+            score += 1
             if amount_of_guns < 3:
                 amount_of_guns += 1
 
         for enemy in enemies:
             if enemy.rect.top > SCREEN_HEIGHT:
-                damage += 1
-                print(f"Damage = {damage}")
                 enemies.remove(enemy)
 
         allSprites.update() # update all sprites
 
-        draw(allSprites, elapsedTime, damage, score, scroll)
+        draw(allSprites, elapsedTime, score, scroll)
         
         # scroll background
         scroll += 5
